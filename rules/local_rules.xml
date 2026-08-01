@@ -1,0 +1,87 @@
+<!--
+  Custom Wazuh detection rules: Active Directory Kerberoasting & DCSync
+  MITRE ATT&CK: T1558.003 (Kerberoasting), T1003.006 (DCSync)
+
+  Deploy: append to /var/ossec/etc/rules/local_rules.xml on the Wazuh manager,
+  then: systemctl restart wazuh-manager
+
+  Prerequisite: the domain controller's Wazuh agent must be forwarding the Windows
+  Security eventchannel (see ../docs/enable-auditing.md) and the DC must have the
+  correct audit policy + SACLs enabled, or these rules will never fire (no events
+  will exist to match against).
+
+  Parent rule 60103 = base Wazuh Windows eventchannel decoded rule.
+  If your Wazuh ruleset uses a different base rule ID for eventchannel/Security log
+  in your version, check with: /var/ossec/bin/wazuh-logtest and adjust if_sid.
+-->
+<group name="security_event,windows,active_directory,">
+
+  <!-- ================= DCSYNC DETECTION ================= -->
+  <!-- Fires on Directory Service Access (4662) requesting the replication extended
+       rights normally reserved for real Domain Controllers:
+         {1131f6aa-9c07-11d1-f79f-00c04fc2dcd2} = DS-Replication-Get-Changes
+         {1131f6ad-9c07-11d1-f79f-00c04fc2dcd2} = DS-Replication-Get-Changes-All
+       Tools this catches: Mimikatz lsadump::dcsync, Impacket secretsdump.py -->
+  <rule id="110001" level="12">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID">^4662$</field>
+    <field name="win.eventdata.properties" type="pcre2">\{1131f6aa-9c07-11d1-f79f-00c04fc2dcd2\}|\{1131f6ad-9c07-11d1-f79f-00c04fc2dcd2\}</field>
+    <options>no_full_log</options>
+    <mitre>
+      <id>T1003.006</id>
+    </mitre>
+    <description>Directory Service Access requesting replication rights. Possible DCSync attack.</description>
+  </rule>
+
+  <!-- Exception: suppress alerts from real DC machine accounts (they legitimately
+       replicate with each other constantly). Machine accounts always end in $.
+       IMPORTANT: add your Entra Connect / directory-sync service account username
+       here too (via an additional <field name="win.eventdata.SubjectUserName">
+       rule, or by adding it to this pcre2 alternation) once it exists, so normal
+       hybrid-sync activity doesn't get flagged. -->
+  <rule id="110002" level="0">
+    <if_sid>110001</if_sid>
+    <field name="win.eventdata.SubjectUserName" type="pcre2">\$$</field>
+    <options>no_full_log</options>
+    <description>Ignore Directory Service Access originating from a legitimate machine account (real DC).</description>
+  </rule>
+
+  <!-- ================= KERBEROASTING DETECTION ================= -->
+  <!-- Fires on TGS request (4769) using RC4-HMAC ticket encryption (0x17) with
+       pre-authentication ticket options consistent with tooling like
+       Rubeus/GetUserSPNs.ps1 requesting a roastable service ticket. -->
+  <rule id="110010" level="12">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID">^4769$</field>
+    <field name="win.eventdata.TicketEncryptionType" type="pcre2">0x17</field>
+    <options>no_full_log</options>
+    <mitre>
+      <id>T1558.003</id>
+    </mitre>
+    <description>Kerberos TGS requested with RC4 encryption. Possible Kerberoasting attack.</description>
+  </rule>
+
+  <!-- Exception: krbtgt and machine account ($) targets are not valid Kerberoast
+       targets - filter noise from normal Kerberos operation. -->
+  <rule id="110011" level="0">
+    <if_sid>110010</if_sid>
+    <field name="win.eventdata.ServiceName" type="pcre2">^krbtgt$|\$$</field>
+    <options>no_full_log</options>
+    <description>Ignore RC4 TGS requests targeting krbtgt or machine accounts (normal AD operation, not roastable).</description>
+  </rule>
+
+  <!-- Higher-confidence variant: same account requesting RC4 tickets for multiple
+       distinct SPNs is a stronger signal than a single request (which can
+       occasionally be legitimate/misconfigured). Requires Wazuh's <frequency>/
+       <same_field> correlation - tune timeframe to your environment. -->
+  <rule id="110012" level="14" frequency="3" timeframe="300">
+    <if_matched_sid>110010</if_matched_sid>
+    <same_field>win.eventdata.TargetUserName</same_field>
+    <different_field>win.eventdata.ServiceName</different_field>
+    <description>Same account requested RC4 Kerberos tickets for 3+ distinct SPNs within 5 minutes. High-confidence Kerberoasting sweep.</description>
+    <mitre>
+      <id>T1558.003</id>
+    </mitre>
+  </rule>
+
+</group>
