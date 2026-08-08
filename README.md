@@ -18,6 +18,8 @@ Both are *credential theft* techniques that abuse legitimate Active Directory/Ke
 | [`docs/attack-simulation-and-testing.md`](./docs/attack-simulation-and-testing.md) | How to actually trigger both attacks in a lab to validate detection, plus a false-positive check |
 | [`docs/enable-fim.md`](./docs/enable-fim.md) | File Integrity Monitoring setup for AD persistence paths (SYSVOL/GPO, scheduled tasks, autostart registry keys) |
 | [`rules/fim_rules.xml`](./rules/fim_rules.xml) | Custom FIM correlation rules tagging persistence-relevant path changes with MITRE IDs |
+| [`docs/enable-vulnerability-detection.md`](./docs/enable-vulnerability-detection.md) | Proactive CVE scanning against installed software — finds weaknesses before they're exploited |
+| [`docs/enable-virustotal-integration.md`](./docs/enable-virustotal-integration.md) | Automatic hash reputation lookups on FIM-detected file changes |
 | `screenshots/` | Drop your alert screenshots here |
 | [`threat-hunting/`](./threat-hunting/) | Proactive hunt queries covering Discovery, Golden Ticket indicators, PowerShell/LOLBins, and persistence — different MITRE tactics than the automated rules above, run manually rather than auto-alerted |
 
@@ -57,6 +59,19 @@ Beyond attack detection and hunting, this repo also configures Wazuh's FIM modul
 | 110020 | Change in SYSVOL Group Policy Objects | 12 | T1484.001 |
 | 110021 | Scheduled task file created/modified | 10 | T1053.005 |
 | 110022 | Change in Run/RunOnce autostart registry keys | 12 | T1547.001 |
+
+---
+
+## Threat Intelligence
+
+This repo covers all four pillars of Wazuh's Threat Intelligence module set:
+
+| Capability | What it adds | Where |
+|---|---|---|
+| **Threat Hunting** | Proactive, analyst-driven queries for techniques a static rule handles poorly | [`/threat-hunting`](./threat-hunting/) |
+| **Vulnerability Detection** | Proactive CVE scanning — the only piece of this repo that's preventive rather than reactive | [`docs/enable-vulnerability-detection.md`](./docs/enable-vulnerability-detection.md) |
+| **VirusTotal** | Automatic hash reputation lookups on FIM-detected file changes | [`docs/enable-virustotal-integration.md`](./docs/enable-virustotal-integration.md) |
+| **MITRE ATT&CK** | Built-in Wazuh dashboard visualizing fired alerts against the ATT&CK matrix — works automatically since every custom rule in this repo already carries a MITRE tag | *(screenshot pending — see `screenshots/`)* |
 
 ---
 
