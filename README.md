@@ -1,6 +1,6 @@
 # Active Directory Attack Detection with Wazuh
 
-Custom Wazuh detection rules for two of the most common post-compromise Active Directory attacks — **Kerberoasting** and **DCSync** — deployed against a Windows Server domain controller and validated with live attack simulation.
+Custom Wazuh detection rules for two of the most common post-compromise Active Directory attacks — **Kerberoasting** and **DCSync** deployed against a Windows Server domain controller and validated with live attack simulation.
 
 ## Why these two attacks
 
