@@ -47,6 +47,10 @@ Domain Controller (Windows Server)
 
 ## Part of a multi-platform detection story
 
-This is the same Kerberoasting/DCSync detection logic already built in **Splunk** (SPL), now rebuilt independently in **Wazuh**. Building the same detection twice on two different platforms is the point — it demonstrates the underlying attack logic and field-level reasoning transfers, not just familiarity with one product's query syntax.
+This is the same Kerberoasting/DCSync detection logic already built in **Splunk** (SPL) — see [active-directory-attack-detection-lab](https://github.com/swethanyamala/active-directory-attack-detection-lab) — now rebuilt independently in **Wazuh**. Building the same detection twice on two different platforms is the point — it demonstrates the underlying attack logic and field-level reasoning transfers, not just familiarity with one product's query syntax.
 
 Resume/interview framing: *"Built and validated Kerberoasting and DCSync detection rules across two independent SIEM platforms (Splunk and Wazuh), including audit policy prerequisites, false-positive tuning, and live attack simulation for validation."*
+
+## Incident Response
+
+For the "what to do when this fires" side — triage, containment, and recovery steps — see the playbooks already written for these same two attacks: [playbooks/02-kerberoasting-response.md](https://github.com/swethanyamala/active-directory-attack-detection-lab/blob/main/playbooks/02-kerberoasting-response.md) and [playbooks/03-dcsync-response.md](https://github.com/swethanyamala/active-directory-attack-detection-lab/blob/main/playbooks/03-dcsync-response.md). The response procedure doesn't change based on which SIEM caught the attack, so it isn't duplicated here.
