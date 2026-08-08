@@ -16,6 +16,8 @@ Both are *credential theft* techniques that abuse legitimate Active Directory/Ke
 | [`rules/local_rules.xml`](./rules/local_rules.xml) | Wazuh custom detection rules for both attacks, plus false-positive suppression rules and a correlation rule for multi-SPN Kerberoast sweeps |
 | [`docs/enable-auditing.md`](./docs/enable-auditing.md) | Windows audit policy + SACL configuration required before either rule can fire (the step most guides skip) |
 | [`docs/attack-simulation-and-testing.md`](./docs/attack-simulation-and-testing.md) | How to actually trigger both attacks in a lab to validate detection, plus a false-positive check |
+| [`docs/enable-fim.md`](./docs/enable-fim.md) | File Integrity Monitoring setup for AD persistence paths (SYSVOL/GPO, scheduled tasks, autostart registry keys) |
+| [`rules/fim_rules.xml`](./rules/fim_rules.xml) | Custom FIM correlation rules tagging persistence-relevant path changes with MITRE IDs |
 | `screenshots/` | Drop your alert screenshots here |
 | [`threat-hunting/`](./threat-hunting/) | Proactive hunt queries covering Discovery, Golden Ticket indicators, PowerShell/LOLBins, and persistence — different MITRE tactics than the automated rules above, run manually rather than auto-alerted |
 
@@ -45,6 +47,18 @@ Domain Controller (Windows Server)
 | 110010 | Event 4769 with RC4 ticket encryption (0x17) | 12 | T1558.003 |
 | 110011 | Suppress 110010 for krbtgt/machine account targets | 0 | — |
 | 110012 | Same account, 3+ distinct SPNs via RC4 within 5 min | 14 | T1558.003 |
+
+## File Integrity Monitoring (Persistence Detection)
+
+Beyond attack detection and hunting, this repo also configures Wazuh's FIM module to watch the specific files/registry keys an attacker touches when establishing persistence after a compromise (GPO tampering, scheduled tasks, autostart registry entries) — directly backing up the persistence hunt above with actual file-change evidence. See [`docs/enable-fim.md`](./docs/enable-fim.md) and [`rules/fim_rules.xml`](./rules/fim_rules.xml).
+
+| Rule ID | Trigger | Level | MITRE |
+|---|---|---|---|
+| 110020 | Change in SYSVOL Group Policy Objects | 12 | T1484.001 |
+| 110021 | Scheduled task file created/modified | 10 | T1053.005 |
+| 110022 | Change in Run/RunOnce autostart registry keys | 12 | T1547.001 |
+
+---
 
 ## Threat Hunting
 

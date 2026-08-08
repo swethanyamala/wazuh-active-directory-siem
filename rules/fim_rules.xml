@@ -1,0 +1,56 @@
+<!--
+  Custom Wazuh FIM (File Integrity Monitoring) rules: AD persistence detection
+  MITRE ATT&CK: T1484.001 (Group Policy Modification), T1547.001 (Registry Run Keys),
+                T1053.005 (Scheduled Task)
+
+  Deploy: append to /var/ossec/etc/rules/local_rules.xml on the Wazuh manager,
+  then: systemctl restart wazuh-manager
+
+  Prerequisite: syscheck must be configured on the DC agent to monitor the paths
+  below in realtime mode — see ../docs/enable-fim.md. Without that config, no FIM
+  events exist for these rules to match against, and they will simply never fire.
+
+  These rules tag Wazuh's generic FIM alerts (usually a low/default severity) with
+  a higher level and a MITRE mapping when the change lands in one of a small set
+  of high-value, AD-persistence-relevant paths, instead of leaving every FIM event
+  at the same generic severity regardless of what actually changed.
+
+  NOTE: verify the exact decoded field name for the changed path in your Wazuh
+  version/ruleset before deploying — run `/var/ossec/bin/wazuh-logtest` against a
+  captured FIM event and confirm whether it's `syscheck.path`, `file`, or another
+  field name, and adjust the <field name="..."> below to match. Field naming has
+  shifted across Wazuh major versions.
+-->
+<group name="syscheck,active_directory,persistence,">
+
+  <!-- ================= GPO / SYSVOL TAMPERING ================= -->
+  <rule id="110020" level="12">
+    <if_group>syscheck</if_group>
+    <field name="file" type="pcre2">SYSVOL.*Policies</field>
+    <mitre>
+      <id>T1484.001</id>
+    </mitre>
+    <description>Change detected in SYSVOL Group Policy Objects. Possible malicious GPO tampering for domain-wide persistence.</description>
+  </rule>
+
+  <!-- ================= SCHEDULED TASK FILE DROP ================= -->
+  <rule id="110021" level="10">
+    <if_group>syscheck</if_group>
+    <field name="file" type="pcre2">System32.Tasks</field>
+    <mitre>
+      <id>T1053.005</id>
+    </mitre>
+    <description>Scheduled task file created/modified on monitored host. Cross-check against Event 4698 in the corresponding threat hunt.</description>
+  </rule>
+
+  <!-- ================= REGISTRY AUTOSTART PERSISTENCE ================= -->
+  <rule id="110022" level="12">
+    <if_group>syscheck</if_group>
+    <field name="file" type="pcre2">CurrentVersion.(Run|RunOnce)</field>
+    <mitre>
+      <id>T1547.001</id>
+    </mitre>
+    <description>Change detected in a Windows autostart registry key (Run/RunOnce). Possible persistence via autostart entry.</description>
+  </rule>
+
+</group>
