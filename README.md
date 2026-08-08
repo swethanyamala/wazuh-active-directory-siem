@@ -17,6 +17,7 @@ Both are *credential theft* techniques that abuse legitimate Active Directory/Ke
 | [`docs/enable-auditing.md`](./docs/enable-auditing.md) | Windows audit policy + SACL configuration required before either rule can fire (the step most guides skip) |
 | [`docs/attack-simulation-and-testing.md`](./docs/attack-simulation-and-testing.md) | How to actually trigger both attacks in a lab to validate detection, plus a false-positive check |
 | `screenshots/` | Drop your alert screenshots here |
+| [`threat-hunting/`](./threat-hunting/) | Proactive hunt queries covering Discovery, Golden Ticket indicators, PowerShell/LOLBins, and persistence — different MITRE tactics than the automated rules above, run manually rather than auto-alerted |
 
 ## Architecture
 
@@ -44,6 +45,19 @@ Domain Controller (Windows Server)
 | 110010 | Event 4769 with RC4 ticket encryption (0x17) | 12 | T1558.003 |
 | 110011 | Suppress 110010 for krbtgt/machine account targets | 0 | — |
 | 110012 | Same account, 3+ distinct SPNs via RC4 within 5 min | 14 | T1558.003 |
+
+## Threat Hunting
+
+Beyond the automated rules above, this repo also includes proactive hunt queries for attack techniques that are a poor fit for a static always-on rule (too event-sparse, too correlation-heavy, or too false-positive-prone without human review): [`/threat-hunting`](./threat-hunting/)
+
+| Hunt | Tactic |
+|---|---|
+| [LDAP Recon via PowerShell](./threat-hunting/01-ldap-recon-hunt.md) | Discovery (T1087/T1069/T1482) — closes the exact gap documented in the Splunk repo |
+| [Golden Ticket Indicators](./threat-hunting/02-golden-ticket-indicators.md) | Credential Access (T1558.001) |
+| [Suspicious PowerShell / LOLBins](./threat-hunting/03-suspicious-powershell-lolbins.md) | Execution, Defense Evasion (T1059.001, T1027) |
+| [Persistence: New Admins & Scheduled Tasks](./threat-hunting/04-persistence-hunt.md) | Persistence (T1053.005, T1098) |
+
+---
 
 ## Part of a multi-platform detection story
 
